@@ -1,0 +1,7 @@
+# Optional: only needed if you want to test the Worker locally with `npm run worker:dev`.
+# Copy this file to `.dev.vars` and fill in real values. Never commit `.dev.vars`.
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+SESSION_SECRET=a-long-random-string
+ADMIN_EMAILS=sreehariar2008@gmail.com,lofiscide@gmail.com

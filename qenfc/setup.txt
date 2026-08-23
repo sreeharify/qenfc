@@ -1,0 +1,357 @@
+================================================================================
+ qeNFC — SETUP GUIDE (for someone who has never deployed a website before)
+================================================================================
+
+Read this top to bottom once before starting. Do the steps in order — later
+steps need information (like your live web address) that earlier steps
+create.
+
+Everything here is free. You will create four free accounts: GitHub,
+Cloudflare, Neon, and Google Cloud. None of them need a credit card for what
+this project uses.
+
+--------------------------------------------------------------------------------
+ A NOTE ON "CLOUDFLARE PAGES"
+--------------------------------------------------------------------------------
+You asked for Cloudflare Pages. As of 2026, Cloudflare itself now recommends
+a newer product called "Cloudflare Workers with static assets" for all new
+projects instead — Pages still works, but Cloudflare has stopped adding new
+features to it (things like built-in rate limiting only exist on Workers).
+Since this is a brand new project, this app is built for that newer path.
+The workflow is nearly identical (connect GitHub, push, it auto-deploys,
+it's free), it's just called "Workers" instead of "Pages" in the Cloudflare
+dashboard. Everywhere below, "your Worker" means "your website."
+
+
+================================================================================
+ PART 1 — Set up Termux and push the code to GitHub
+================================================================================
+
+1.1  Install Termux
+    If you don't already have it, install Termux from F-Droid, not the Play
+    Store (the Play Store version is outdated and broken). Get F-Droid at
+    https://f-droid.org and install Termux through it.
+
+1.2  Open Termux and run:
+        termux-setup-storage
+    Tap "Allow" when Android asks for permission. This lets Termux see your
+    phone's Downloads folder.
+
+1.3  Update packages and install git + unzip:
+        pkg update -y && pkg upgrade -y
+        pkg install git unzip -y
+
+1.4  Get this project's zip file onto your phone (you should already have it
+    from this chat — it'll usually save to your Downloads folder), then in
+    Termux:
+        cd ~/storage/downloads
+        unzip qenfc.zip -d ~/
+        cd ~/qenfc
+        ls
+    You should see folders like "src", "worker", "db" and files like
+    "package.json" and this "setup.txt".
+
+1.5  Tell git who you are (use your own name/email):
+        git config --global user.name "Your Name"
+        git config --global user.email "you@example.com"
+
+1.6  Turn the folder into a git repo and make the first commit:
+        git init
+        git add .
+        git commit -m "Initial commit"
+        git branch -M main
+
+1.7  Create the (empty) GitHub repository:
+    - On your phone, open a browser and go to https://github.com/new
+    - Repository name: qenfc (or anything you like)
+    - Keep it Private or Public, your choice
+    - Do NOT check "Add a README" — leave it completely empty
+    - Click "Create repository"
+    - Copy the HTTPS URL it shows you, like:
+        https://github.com/YOUR-USERNAME/qenfc.git
+
+1.8  Create a GitHub Personal Access Token (this acts as your password when
+    pushing from Termux — GitHub no longer accepts your real password here):
+    - On GitHub: tap your profile picture → Settings → scroll down to
+      Developer settings → Personal access tokens → Tokens (classic)
+    - Generate new token (classic) → give it any name → check the "repo"
+      checkbox → Generate token
+    - Copy the token somewhere safe (a notes app). You won't see it again.
+
+1.9  Connect and push:
+        git remote add origin https://github.com/YOUR-USERNAME/qenfc.git
+        git push -u origin main
+    When it asks for a username, enter your GitHub username.
+    When it asks for a password, paste the Personal Access Token from 1.8
+    (not your GitHub password).
+
+Your code is now on GitHub. Keep this Termux setup — any time you want to
+push future changes, it's just:
+        cd ~/qenfc
+        git add .
+        git commit -m "describe what changed"
+        git push
+
+
+================================================================================
+ PART 2 — Create the database (Neon)
+================================================================================
+
+2.1  Go to https://neon.tech and sign up (you can use your Google account).
+
+2.2  Create a new project. Call it "qenfc". Pick any region close to you.
+
+2.3  Neon will show you a "Connection string" that looks like:
+        postgresql://neondb_owner:AbCdEf123@ep-cool-name-12345.region.aws.neon.tech/neondb?sslmode=require
+    Copy this whole string and save it somewhere — this is your DATABASE_URL,
+    you'll paste it into Cloudflare in Part 5.
+
+2.4  In the Neon console, find "SQL Editor" in the left sidebar.
+
+2.5  On your phone, open the file db/schema.sql from this project (in a text
+    editor, or in Termux with: cat db/schema.sql), select all the text, and
+    copy it.
+
+2.6  Paste it into Neon's SQL Editor and click "Run". This creates the
+    tables the app needs (users, qr_codes, portfolios, rate_limits). You can
+    re-run this safely later if needed — it won't duplicate anything.
+
+
+================================================================================
+ PART 3 — Create your Cloudflare Worker (this is your live website)
+================================================================================
+
+3.1  Go to https://dash.cloudflare.com and sign up (free plan).
+
+3.2  In the left sidebar, go to "Workers & Pages".
+
+3.3  Click "Create" → look for an option like "Import a repository" /
+    "Connect to Git" (this feature is called Workers Builds). Connect your
+    GitHub account when asked, and authorize Cloudflare to access the
+    "qenfc" repository you created in Part 1.
+
+3.4  Select the qenfc repo. Cloudflare should detect this is a Workers
+    project because of the wrangler.jsonc file. When it asks for a build
+    command, enter:
+        npm run build
+    Leave other settings as detected. Click "Save and Deploy" (or "Deploy").
+
+3.5  The first deploy will likely finish but the site won't fully work yet —
+    that's expected, we haven't added your database/Google keys yet. What
+    matters right now is the live web address Cloudflare gives you, shown on
+    your Worker's Overview page. It will look like:
+        https://qenfc.YOUR-SUBDOMAIN.workers.dev
+    Write this down exactly — you need it for Part 4 and it's the domain
+    you'll put on your printed QR codes.
+
+
+================================================================================
+ PART 4 — Set up "Sign in with Google"
+================================================================================
+
+4.1  Go to https://console.cloud.google.com and sign in.
+
+4.2  Create a new project (top left project dropdown → New Project). Name it
+    "qeNFC" or anything you like.
+
+4.3  In the search bar, go to "OAuth consent screen".
+    - User type: External
+    - App name: qeNFC (or your business name)
+    - Support email: your email
+    - Developer contact email: your email
+    - Save through the remaining screens (scopes/test users can be left
+      default for now).
+    - Once created, look for a "Publish app" button and click it, so any
+      Google account can sign in — not just ones you manually add as
+      testers. This app only asks for name/email (not sensitive data), so
+      this normally does not require a lengthy Google review.
+
+4.4  Go to "Credentials" → "Create Credentials" → "OAuth client ID".
+    - Application type: Web application
+    - Name: qeNFC
+    - Authorized JavaScript origins → Add URI:
+        https://qenfc.YOUR-SUBDOMAIN.workers.dev
+    - Authorized redirect URIs → Add URI:
+        https://qenfc.YOUR-SUBDOMAIN.workers.dev/api/auth/callback
+      (use the exact address from step 3.5, and don't forget /api/auth/callback)
+    - Click "Create"
+
+4.5  Google will show you a Client ID and Client secret. Copy both — you
+    need them in Part 5.
+
+
+================================================================================
+ PART 5 — Add your keys to Cloudflare
+================================================================================
+
+5.1  Generate a random SESSION_SECRET. Back in Termux:
+        pkg install openssl-tool -y
+        openssl rand -hex 32
+    Copy the long string it prints out.
+
+5.2  Choose a private admin panel path — a random-ish word only you know,
+    e.g. "control-8x7q2z". This becomes part of your admin link. Don't share
+    it publicly. Write it down.
+
+5.3  In the Cloudflare dashboard: Workers & Pages → select your "qenfc"
+    Worker → Settings → find "Variables and Secrets" → Add.
+    Add each of these one at a time (choose type "Secret" for anything
+    sensitive, "Text" is fine for the rest):
+
+      DATABASE_URL        = the connection string from step 2.3   (Secret)
+      GOOGLE_CLIENT_ID     = from step 4.5                          (Secret)
+      GOOGLE_CLIENT_SECRET = from step 4.5                          (Secret)
+      SESSION_SECRET       = the random string from step 5.1        (Secret)
+      ADMIN_EMAILS         = sreehariar2008@gmail.com,lofiscide@gmail.com   (Text)
+      VITE_ADMIN_PATH      = the private path you chose in step 5.2 (Text)
+
+5.4  Click "Save and Deploy" (or "Deploy") so Cloudflare rebuilds the site
+    with these values. This matters especially for VITE_ADMIN_PATH — it only
+    takes effect on a fresh build, not an old one.
+
+
+================================================================================
+ PART 6 — Test it
+================================================================================
+
+6.1  Visit https://qenfc.YOUR-SUBDOMAIN.workers.dev — you should see a
+    simple "qeNFC" landing page.
+
+6.2  Visit https://qenfc.YOUR-SUBDOMAIN.workers.dev/YOUR-ADMIN-PATH (the
+    path from step 5.2). Sign in with Google using sreehariar2008@gmail.com
+    or lofiscide@gmail.com. You should land on the admin panel with stats
+    and a "Generate new QR codes" box.
+
+    >>> THIS IS YOUR ADMIN PANEL LINK. Save it somewhere private. <<<
+    >>> https://qenfc.YOUR-SUBDOMAIN.workers.dev/YOUR-ADMIN-PATH  <<<
+
+If something doesn't work, see TROUBLESHOOTING near the end of this file.
+
+
+================================================================================
+ PART 7 — Manufacturing QR codes
+================================================================================
+
+7.1  In the admin panel, under "Generate new QR codes", enter how many you
+    need (e.g. 50) and click Generate. You'll get a code + key pair for
+    each one, shown as CSV text (code,key) that you can copy.
+
+7.2  Each QR code needs to point to:
+        https://qenfc.YOUR-SUBDOMAIN.workers.dev/?code=THECODE
+    replacing THECODE with each generated code. Print the matching KEY as
+    plain text underneath each QR code — that's what the business owner
+    types in to claim it.
+
+7.3  To turn that list of links into actual QR code images for printing,
+    use any free QR generator. Two easy options:
+    - A bulk/CSV QR generator website (search "bulk QR code generator csv"
+      — several free ones exist and will make one image per row).
+    - Or generate them one at a time with a free image API, for example:
+        https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https://qenfc.YOUR-SUBDOMAIN.workers.dev/?code=THECODE
+      Open that link in a browser and it returns a downloadable QR image.
+
+    This app itself only manages the codes/keys/data — turning them into
+    printable images is a separate, one-time step per batch.
+
+
+================================================================================
+ HOW IT WORKS DAY TO DAY
+================================================================================
+
+- A customer scans an unclaimed QR code → is asked to sign in with Google →
+  enters the key printed under the code → fills in business name, Google
+  review link, and whatever else applies → their page goes live instantly.
+- Anyone who scans that code afterward sees their finished page, with a big
+  "Leave us a Google review" button front and center.
+- The business owner can go back anytime to
+  https://qenfc.YOUR-SUBDOMAIN.workers.dev/dashboard, sign in, and edit
+  their page. Only their exact Google account can edit it — nobody else,
+  even with the key, can take over an already-claimed code.
+- A single Google account can claim as many codes as it has valid keys for.
+- You (the admin) can see everything, edit any page, deactivate or delete
+  any code, unclaim a code (e.g. if a business gives you back their QR or a
+  key was leaked), and generate new batches of codes — all from the admin
+  panel.
+
+
+================================================================================
+ SECURITY NOTES
+================================================================================
+
+- Only Google accounts listed in ADMIN_EMAILS can reach the admin panel —
+  everyone else who visits that URL sees "Not authorized," even if they
+  guess the link.
+- The claim endpoint (where someone submits a key) is rate-limited: no more
+  than 10 attempts per 10 minutes per visitor, to make key-guessing
+  impractical. Viewing already-set-up pages is not rate-limited or slowed
+  down in any way.
+- Sessions are secure, http-only cookies that expire after 30 days of
+  inactivity — there's nothing for a customer to remember or manage.
+- If you ever think SESSION_SECRET has leaked, generate a new one (repeat
+  step 5.1) and update it in Cloudflare — this instantly logs everyone out
+  everywhere, which is the "panic button" for account security.
+- If a specific key is compromised (e.g. leaked before the QR was claimed),
+  unclaim or deactivate that code from the admin panel and issue a new one.
+
+
+================================================================================
+ COSTS
+================================================================================
+
+Everything here runs on free tiers for a small/medium volume of QR codes:
+- Cloudflare Workers: 100,000 requests/day free
+- Neon: free tier is generous for a database this size, with the database
+  automatically pausing when idle and waking on the next request (fully
+  serverless — nothing to keep running, nothing to pay for while unused)
+- Google OAuth: free
+- GitHub: free for a private repo
+
+If you ever outgrow the free tiers, all three have inexpensive paid plans —
+but there's nothing to set up or pay for today.
+
+
+================================================================================
+ TROUBLESHOOTING
+================================================================================
+
+"redirect_uri_mismatch" when signing in with Google
+  → The URL in Google Cloud Console (step 4.4) must match your Cloudflare
+    URL exactly, including https:// and ending in /api/auth/callback.
+    Also note: this only works on your real production URL, not on
+    Cloudflare's random preview-deploy URLs (if any show up).
+
+Site loads but signing in does nothing / shows an error
+  → Double check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are pasted
+    correctly in Cloudflare (Part 5.3), with no extra spaces.
+
+"Internal server error" on almost everything
+  → DATABASE_URL is probably missing, wrong, or the schema.sql wasn't run
+    yet. Re-check Part 2.
+
+Admin link shows "Not authorized"
+  → You're signed in with a Google account that isn't in ADMIN_EMAILS, or
+    ADMIN_EMAILS has a typo/extra space. It must be an exact, comma
+    separated match.
+
+Changed VITE_ADMIN_PATH but the old link still shows the admin panel / new
+link doesn't work
+  → VITE_ADMIN_PATH only takes effect on a fresh build. After changing it,
+    trigger a new deploy (push any small change to GitHub, or use "Retry
+    deployment" in the Cloudflare dashboard).
+
+git push asks for a password and rejects it
+  → Use the Personal Access Token from step 1.8, not your GitHub account
+    password.
+
+Build fails in Cloudflare
+  → Open the failed deployment's build log in the Cloudflare dashboard —
+    it will usually point at a specific missing setting or typo.
+
+
+================================================================================
+ THAT'S IT
+================================================================================
+Once Parts 1–6 are done, everything after that is just: print QR codes
+(Part 7), hand them out, and check the admin panel occasionally. Every future
+code change just needs "git add . && git commit -m ... && git push" from
+Termux — Cloudflare rebuilds and redeploys automatically.
