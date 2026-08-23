@@ -13,7 +13,15 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "observability": {
-    "enabled": true
-  }
-}
+  // By default, `wrangler deploy` WIPES every dashboard-set variable on each
+  // deploy and replaces them with only what's listed here. That's why
+  // ADMIN_EMAILS is defined directly in this file instead of the dashboard —
+  // it isn't sensitive, so it's safe to commit, and this way it can never
+  // "disappear" on a redeploy. Edit the list below to change who has admin
+  // access, then commit + push.
+  "vars": {
+    "ADMIN_EMAILS": "sreehariar2008@gmail.com,lofiscide@gmail.com"
+  },
+  // Extra safety net: don't wipe any *other* variables you set via the
+  // Cloudflare dashboard (DATABASE_URL, GOOGLE_CLIENT_ID, etc.) on deploy.
+  "keep_vars":
