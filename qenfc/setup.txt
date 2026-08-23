@@ -1,4 +1,4 @@
-================================================================================
+﻿================================================================================
  qeNFC — SETUP GUIDE (for someone who has never deployed a website before)
 ================================================================================
 
@@ -205,7 +205,7 @@ push future changes, it's just:
       ADMIN_EMAILS         = sreehariar2008@gmail.com,lofiscide@gmail.com   (Text)
       VITE_ADMIN_PATH      = the private path you chose in step 5.2 (Text)
 
-5.4  Click "Save and Deploy" (or "Deploy") so Cloudflare rebuilds the site
+5.4  yes, Click "Save and Deploy" (or "Deploy") so Cloudflare rebuilds the site
     with these values. This matters especially for VITE_ADMIN_PATH — it only
     takes effect on a fresh build, not an old one.
 
