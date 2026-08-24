@@ -2,6 +2,7 @@ import { getDb } from '../lib/db.js'
 import { getSessionUser } from '../lib/session.js'
 import { json } from '../lib/response.js'
 import { checkRateLimit } from '../lib/rateLimit.js'
+import { normalizeWhatsApp } from '../lib/normalize.js'
 
 const PORTFOLIO_FIELDS = [
   'business_name',
@@ -26,6 +27,7 @@ function sanitizePortfolio(body) {
   for (const f of PORTFOLIO_FIELDS) {
     data[f] = (body[f] ?? '').toString().trim().slice(0, 500)
   }
+  data.whatsapp = normalizeWhatsApp(data.whatsapp)
   return data
 }
 

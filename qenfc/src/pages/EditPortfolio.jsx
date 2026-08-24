@@ -4,7 +4,9 @@ import { useSession } from '../hooks/useSession.js'
 import { api } from '../lib/api.js'
 import Spinner from '../components/Spinner.jsx'
 import GoogleLoginButton from '../components/GoogleLoginButton.jsx'
+import ReviewLinkHelper from '../components/ReviewLinkHelper.jsx'
 import { PORTFOLIO_FIELDS } from '../lib/fields.js'
+import { normalizeWhatsApp } from '../lib/whatsapp.js'
 
 export default function EditPortfolio() {
   const { code } = useParams()
@@ -40,7 +42,7 @@ export default function EditPortfolio() {
 
     setBusy(true)
     try {
-      await api.updateQr(code, values)
+      await api.updateQr(code, { ...values, whatsapp: normalizeWhatsApp(values.whatsapp) })
       setMsg('Saved.')
     } catch (err) {
       setError(err.data?.error || 'Could not save. Make sure this QR code belongs to your account.')
@@ -61,9 +63,20 @@ export default function EditPortfolio() {
       {msg && <div className="success-box">{msg}</div>}
 
       {PORTFOLIO_FIELDS.map((f) => (
-        <div className="field" key={f.key}>
-          <label>{f.label}{f.required && ' *'}</label>
-          <input value={values[f.key] || ''} onChange={(e) => set(f.key, e.target.value)} placeholder={f.placeholder} />
+        <div key={f.key}>
+          <div className="field">
+            <label>{f.label}{f.required && ' *'}</label>
+            <input
+              value={values[f.key] || ''}
+              onChange={(e) => set(f.key, e.target.value)}
+              onBlur={f.key === 'whatsapp' ? (e) => set('whatsapp', normalizeWhatsApp(e.target.value)) : undefined}
+              placeholder={f.placeholder}
+              inputMode={f.key === 'whatsapp' || f.key === 'phone' ? 'tel' : undefined}
+            />
+          </div>
+          {f.key === 'google_review_link' && (
+            <ReviewLinkHelper onConverted={(link) => set('google_review_link', link)} />
+          )}
         </div>
       ))}
 

@@ -1,6 +1,7 @@
 import { getDb } from '../lib/db.js'
 import { requireAdmin } from '../lib/session.js'
 import { json } from '../lib/response.js'
+import { normalizeWhatsApp } from '../lib/normalize.js'
 
 function randomCode(len = 5) {
   const digits = '0123456789'
@@ -138,6 +139,7 @@ export async function updateQr(request, env, id) {
     ]
     const data = {}
     for (const f of fields) data[f] = (body.portfolio[f] ?? '').toString().trim().slice(0, 500)
+    data.whatsapp = normalizeWhatsApp(data.whatsapp)
 
     await sql`
       INSERT INTO portfolios (

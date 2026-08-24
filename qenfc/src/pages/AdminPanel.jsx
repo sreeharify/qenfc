@@ -3,6 +3,7 @@ import { useSession } from '../hooks/useSession.js'
 import { api } from '../lib/api.js'
 import GoogleLoginButton from '../components/GoogleLoginButton.jsx'
 import Spinner from '../components/Spinner.jsx'
+import PrintStudio from './PrintStudio.jsx'
 
 export default function AdminPanel() {
   const { user, loading, refresh } = useSession()
@@ -107,6 +108,7 @@ function AdminDashboard({ user, onLogout }) {
 
       <div className="tabs">
         <button className={`btn ${tab === 'qrs' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setTab('qrs')}>QR codes</button>
+        <button className={`btn ${tab === 'print' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setTab('print')}>Print</button>
         <button className={`btn ${tab === 'users' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setTab('users')}>Users</button>
       </div>
 
@@ -153,6 +155,8 @@ function AdminDashboard({ user, onLogout }) {
           ))}
         </>
       )}
+
+      {tab === 'print' && <PrintStudio codes={genResult || []} />}
 
       {tab === 'users' && (
         <div className="card">

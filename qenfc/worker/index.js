@@ -3,6 +3,7 @@ import * as auth from './routes/auth.js'
 import * as qr from './routes/qr.js'
 import * as dashboard from './routes/dashboard.js'
 import * as admin from './routes/admin.js'
+import * as tools from './routes/tools.js'
 
 export default {
   async fetch(request, env, ctx) {
@@ -50,6 +51,8 @@ async function routeApi(request, env, url) {
   if (qrMatch && method === 'PUT') return qr.updateQr(request, env, decodeURIComponent(qrMatch[1]))
 
   if (pathname === '/api/dashboard/mine' && method === 'GET') return dashboard.mine(request, env)
+
+  if (pathname === '/api/tools/review-link' && method === 'GET') return tools.reviewLinkFromMaps(request, env, url)
 
   if (pathname === '/api/admin/stats' && method === 'GET') return admin.stats(request, env)
   if (pathname === '/api/admin/users' && method === 'GET') return admin.users(request, env)

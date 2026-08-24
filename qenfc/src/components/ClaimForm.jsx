@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { api } from '../lib/api.js'
 import { PORTFOLIO_FIELDS } from '../lib/fields.js'
+import { normalizeWhatsApp } from '../lib/whatsapp.js'
+import ReviewLinkHelper from './ReviewLinkHelper.jsx'
 
 export default function ClaimForm({ code, onClaimed }) {
   const [key, setKey] = useState('')
@@ -18,7 +20,7 @@ export default function ClaimForm({ code, onClaimed }) {
 
     setBusy(true)
     try {
-      await api.claimQr({ code, key, ...values })
+      await api.claimQr({ code, key, ...values, whatsapp: normalizeWhatsApp(values.whatsapp) })
       onClaimed()
     } catch (err) {
       setError(err.data?.error || 'Something went wrong. Please try again.')
@@ -40,9 +42,20 @@ export default function ClaimForm({ code, onClaimed }) {
       </div>
 
       {PORTFOLIO_FIELDS.map((f) => (
-        <div className="field" key={f.key}>
-          <label>{f.label}{f.required && ' *'}</label>
-          <input value={values[f.key] || ''} onChange={(e) => set(f.key, e.target.value)} placeholder={f.placeholder} />
+        <div key={f.key}>
+          <div className="field">
+            <label>{f.label}{f.required && ' *'}</label>
+            <input
+              value={values[f.key] || ''}
+              onChange={(e) => set(f.key, e.target.value)}
+              onBlur={f.key === 'whatsapp' ? (e) => set('whatsapp', normalizeWhatsApp(e.target.value)) : undefined}
+              placeholder={f.placeholder}
+              inputMode={f.key === 'whatsapp' || f.key === 'phone' ? 'tel' : undefined}
+            />
+          </div>
+          {f.key === 'google_review_link' && (
+            <ReviewLinkHelper onConverted={(link) => set('google_review_link', link)} />
+          )}
         </div>
       ))}
 
