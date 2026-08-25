@@ -331,8 +331,8 @@ input:focus, textarea:focus, button:focus-visible, a:focus-visible {
   touch-action: none;
 }
 .print-qr-preview {
-  width: 70%;
-  height: 70%;
+  width: 100%;
+  height: 100%;
   background: repeating-linear-gradient(45deg, #111 0 4px, #fff 4px 8px);
   opacity: 0.85;
 }
