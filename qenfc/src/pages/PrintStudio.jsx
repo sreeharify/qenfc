@@ -13,13 +13,13 @@ const POSTER_PATH = '/images/poster.png'
 //   x, width, qr_size, key_font_size  -> % of the card WIDTH (105mm)
 //   y                                  -> % of the card HEIGHT (148.5mm)
 const DEFAULT_TEMPLATE = {
-  qr_x: 27,
-  qr_y: 10,
-  qr_size: 50,
-  key_x: 10,
-  key_y: 68,
-  key_width: 85,
-  key_font_size: 4.5,
+  qr_x: 29.23,
+  qr_y: 51.29,
+  qr_size: 41.42,
+  key_x: 16.82,
+  key_y: 76.89,
+  key_width: 66.43,
+  key_font_size: 2,
   key_color: '#111111',
 }
 
