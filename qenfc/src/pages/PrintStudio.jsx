@@ -13,9 +13,9 @@ const POSTER_PATH = '/images/poster.png'
 //   x, width, qr_size, key_font_size  -> % of the card WIDTH (105mm)
 //   y                                  -> % of the card HEIGHT (148.5mm)
 const DEFAULT_TEMPLATE = {
-  qr_x: 35.12171677406933,
-  qr_y: 55.35235037266967,
-  qr_size: 29.777581930734538,
+  qr_x: 35.75457435393246,
+  qr_y: 55.00469903948971,
+  qr_size: 28.438355966175653,
   key_x: 16.70249466533547,
   key_y: 77.22235185173828,
   key_width: 66.43,
