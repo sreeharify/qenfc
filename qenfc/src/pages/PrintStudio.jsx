@@ -4,8 +4,15 @@ import { useEffect, useRef, useState } from 'react'
 const CARD_W_MM = 105
 const CARD_H_MM = 148.5
 
+// The poster background — add your file at public/images/poster.png in the
+// project (so it lands at this exact path once deployed). Nothing to
+// configure here; if the file isn't there yet, printing just skips it.
+const POSTER_PATH = '/images/poster.png'
+
+// All position/size values below are PERCENTAGES of the card:
+//   x, width, qr_size, key_font_size  -> % of the card WIDTH (105mm)
+//   y                                  -> % of the card HEIGHT (148.5mm)
 const DEFAULT_TEMPLATE = {
-  background_url: '',
   qr_x: 27,
   qr_y: 10,
   qr_size: 50,
@@ -47,9 +54,9 @@ export default function PrintStudio({ codes = [] }) {
   const copyDesign = async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(template, null, 2))
-      setStatus({ type: 'success', msg: 'Design copied — paste it somewhere safe to reuse next time.' })
+      setStatus({ type: 'success', msg: 'Design copied — paste it somewhere safe, or send the numbers in chat to have it baked in permanently.' })
     } catch {
-      setStatus({ type: 'error', msg: 'Could not copy automatically — select the text manually next time.' })
+      setStatus({ type: 'error', msg: 'Could not copy automatically — read the values from the fields below instead.' })
     }
   }
 
@@ -85,16 +92,12 @@ export default function PrintStudio({ codes = [] }) {
         [CARD_W_MM, CARD_H_MM],
       ]
 
+      // Same-origin static file — no CORS handling needed.
       let bg = null
-      if (template.background_url) {
-        try {
-          bg = await urlToDataUrl(template.background_url)
-        } catch {
-          setStatus({
-            type: 'error',
-            msg: "Couldn't load the background image (its host may block direct access) — continuing without it.",
-          })
-        }
+      try {
+        bg = await urlToDataUrl(POSTER_PATH)
+      } catch {
+        // No poster.png yet — print without a background instead of failing.
       }
 
       const origin = window.location.origin
@@ -135,7 +138,7 @@ export default function PrintStudio({ codes = [] }) {
       doc.save('qenfc-print-sheet.pdf')
       setStatus({
         type: 'success',
-        msg: `PDF ready — ${parsedCodes.length} code(s) across ${Math.ceil(parsedCodes.length / 4)} page(s).`,
+        msg: `PDF ready — ${parsedCodes.length} code(s) across ${Math.ceil(parsedCodes.length / 4)} page(s).${bg ? '' : ' (No public/images/poster.png found yet, so it printed without a background.)'}`,
       })
     } catch (err) {
       console.error(err)
@@ -150,23 +153,15 @@ export default function PrintStudio({ codes = [] }) {
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Design</h2>
         <p className="muted" style={{ marginTop: -4 }}>
-          Drag the QR code and key text to position them. This card is A5-sized (105 × 148.5mm) —
-          four tile edge to edge onto one A4 sheet with zero gap.
+          Drag the QR code and key text to position them, or type exact numbers below. This card is
+          A5-sized (105 × 148.5mm) — four tile edge to edge onto one A4 sheet with zero gap. The
+          background is your <code>public/images/poster.png</code> file.
         </p>
-
-        <div className="field">
-          <label>Background image URL (optional)</label>
-          <input
-            value={template.background_url}
-            onChange={(e) => updateTemplate({ background_url: e.target.value })}
-            placeholder="https://... (your design export — must allow direct access)"
-          />
-        </div>
 
         <div
           ref={containerRef}
           className="print-canvas"
-          style={{ backgroundImage: template.background_url ? `url(${template.background_url})` : undefined }}
+          style={{ backgroundImage: `url(${POSTER_PATH})` }}
         >
           <DesignBox
             containerRef={containerRef}
@@ -194,16 +189,19 @@ export default function PrintStudio({ codes = [] }) {
           </DesignBox>
         </div>
 
-        <div className="field">
-          <label>Key text size</label>
-          <input
-            type="range"
-            min="2"
-            max="10"
-            step="0.5"
-            value={template.key_font_size}
-            onChange={(e) => updateTemplate({ key_font_size: parseFloat(e.target.value) })}
-          />
+        <div className="section-title">Precise values (%)</div>
+        <p className="muted" style={{ marginTop: -6, fontSize: '0.82rem' }}>
+          X, width, size and font size are % of the card's 105mm width. Y is % of the card's 148.5mm
+          height. Read these off here to tell me exact numbers next time instead of dragging.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+          <NumField label="QR — X" value={template.qr_x} onChange={(v) => updateTemplate({ qr_x: v })} />
+          <NumField label="QR — Y" value={template.qr_y} onChange={(v) => updateTemplate({ qr_y: v })} />
+          <NumField label="QR — Size" value={template.qr_size} onChange={(v) => updateTemplate({ qr_size: clamp(v, 15, 90) })} />
+          <NumField label="Key — X" value={template.key_x} onChange={(v) => updateTemplate({ key_x: v })} />
+          <NumField label="Key — Y" value={template.key_y} onChange={(v) => updateTemplate({ key_y: v })} />
+          <NumField label="Key — Width" value={template.key_width} onChange={(v) => updateTemplate({ key_width: clamp(v, 10, 95) })} />
+          <NumField label="Key — Font size" value={template.key_font_size} onChange={(v) => updateTemplate({ key_font_size: v })} />
         </div>
         <div className="field">
           <label>Key text color</label>
@@ -248,8 +246,23 @@ export default function PrintStudio({ codes = [] }) {
   )
 }
 
+function NumField({ label, value, onChange }) {
+  return (
+    <div className="field">
+      <label>{label}</label>
+      <input
+        type="number"
+        step="0.5"
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        style={{ marginBottom: 14 }}
+      />
+    </div>
+  )
+}
+
 async function urlToDataUrl(url) {
-  const res = await fetch(url, { mode: 'cors' })
+  const res = await fetch(url)
   if (!res.ok) throw new Error('fetch failed')
   const blob = await res.blob()
   const dataUrl = await new Promise((resolve, reject) => {
